@@ -15,3 +15,19 @@ class ShowBlog(BlogBase):
 #     title:str
 #     class Config:
 #         orm_mode = True        
+
+
+
+class User(BaseModel):
+    name: str
+    email: str 
+    password:str
+
+
+class ShowUser(BlogBase):
+    name: str
+    email: str 
+
+    class Config:
+        orm_mode = True
+   
