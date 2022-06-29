@@ -2,40 +2,34 @@ from fastapi import APIRouter
 from fastapi import Depends, FastAPI, status, Response, HTTPException
 from typing import List, Union, Optional
 from sqlalchemy.orm import Session
+
+import blog.repository.blog
 from blog import schemas, models
 from blog.database import get_db
+from blog.repository import *
 
-router = APIRouter()
+router = APIRouter(
+    tags=['blog'],
+    prefix='/blog'
+)
 
 
 # <---------------Blog API--------------->
-@router.post('/blog', response_model=schemas.ShowBlog, status_code=status.HTTP_201_CREATED, tags=['blog'])
+@router.post('/', response_model=schemas.ShowBlog, status_code=status.HTTP_201_CREATED)
 async def create(request: schemas.BlogBase, db: Session = Depends(get_db)):
-    new_blog = models.Blog(title=request.title, body=request.body, user_id=1)
-    db.add(new_blog)
-    db.commit()
-    db.refresh(new_blog)
+    return blog.create_blog(request,db)
 
-    return new_blog
-
-
-@router.get('/blog', response_model=List[schemas.ShowBlog], tags=['blog'])
+@router.get('/', response_model=List[schemas.ShowBlog])
 async def all_blogs(db: Session = Depends(get_db)):
-    blogs = db.query(models.Blog).all()
-    return blogs
+    return blog.get_all_blogs(db)
 
 
-@router.get('/blog/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ShowBlog, tags=['blog'])
+@router.get('/{id}', status_code=status.HTTP_200_OK, response_model=schemas.ShowBlog)
 async def all_blogs(id, response: Response, db: Session = Depends(get_db)):
-    blog = db.query(models.Blog).filter(models.Blog.id == id).first()
-    if not blog:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'blog with {id} id not found')
-        # response.status_code=status.HTTP_404_NOT_FOUND
-        # return {'detail':f'blog with {id} id not found'}
-    return blog
+    return blog.get_blog(id,db)
 
 
-@router.put('/blog/{id}', status_code=status.HTTP_202_ACCEPTED, tags=['blog'])
+@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
 async def update_blog(id, request: schemas.BlogBase, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
@@ -45,7 +39,7 @@ async def update_blog(id, request: schemas.BlogBase, db: Session = Depends(get_d
     return {'Updated'}
 
 
-@router.delete('/blog/{id}', status_code=status.HTTP_204_NO_CONTENT, tags=['blog'])
+@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_blog(id: int, db: Session = Depends(get_db)):
     blog = db.query(models.Blog).filter(models.Blog.id == id)
     if not blog.first():
